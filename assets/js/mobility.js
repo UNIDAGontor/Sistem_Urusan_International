@@ -1260,6 +1260,7 @@ function showMobilityForm() {
   document.body.classList.add("overflow-hidden");
 }
 // Form handler
+// Form handler
 async function handleMobilitySubmit(e) {
   e.preventDefault();
 
@@ -1286,9 +1287,11 @@ async function handleMobilitySubmit(e) {
 
     document.getElementById("ttl").value = ttlGabung;
 
+    // 🔥 PERBAIKAN: Tambahkan SEMUA field termasuk file Google Drive
     const payload = {
-      action: "create",
+      action: rowId ? "update" : "create", // ✅ Perbaikan: gunakan "update" jika edit
       sheet: "DATA MAHASISWA NON DEGREE",
+      row: rowId || "", // ✅ Kirim row ID jika edit
 
       type_program: document.getElementById("type_program").value,
       jenis_program: document.getElementById("jenis_program").value,
@@ -1296,18 +1299,27 @@ async function handleMobilitySubmit(e) {
       nama: document.getElementById("nama").value,
       ttl: ttlGabung,
       negara: document.getElementById("negara").value,
-      fakultas_prodi_program: document.getElementById("fakultas_prodi_program")
-        .value,
+      fakultas_prodi_program: document.getElementById("fakultas_prodi_program").value,
       prodi_pj: document.getElementById("prodi_pj").value,
       tahun_masuk: document.getElementById("tahun_masuk").value,
       tahun_keluar: document.getElementById("tahun_keluar").value,
       masa_study: document.getElementById("masa_study").value,
       no_passport: document.getElementById("no_passport").value,
       jenis_kelamin: document.getElementById("jenis_kelamin").value,
+      
+      // 🔥 TAMBAHKAN FIELD INI:
+      reguler_kmi: document.getElementById("reguler_kmi").value || "",
+      file_loa: document.getElementById("file_loa").value || "",
+      scan_passport: document.getElementById("scan_passport").value || "",
+      foto: document.getElementById("foto").value || "",
     };
 
-    // 🔥 kalau edit → hapus dulu
+    // 🔥 DEBUG: Lihat payload yang dikirim
+    console.log("📦 PAYLOAD YANG DIKIRIM:", payload);
+
+    // 🔥 kalau edit → hapus dulu (jika backend tidak support update)
     if (rowId) {
+      console.log("🗑️ Menghapus data lama row:", rowId);
       await fetch(MOBILITY_API, {
         method: "POST",
         body: JSON.stringify({
@@ -1318,13 +1330,15 @@ async function handleMobilitySubmit(e) {
       });
     }
 
-    // 🔥 create baru
+    // 🔥 create/update baru
+    console.log("💾 Menyimpan data baru...");
     const res = await fetch(MOBILITY_API, {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
     const result = await res.json();
+    console.log("📥 HASIL DARI SERVER:", result);
 
     if (!result.success) {
       throw new Error(result.error || "Gagal menyimpan");
@@ -1344,8 +1358,8 @@ async function handleMobilitySubmit(e) {
       rowId ? "✅ Data berhasil diupdate!" : "✅ Data berhasil ditambahkan!",
     );
   } catch (err) {
-    console.error("Submit error:", err);
-    alert("❌ Terjadi kesalahan saat menyimpan data");
+    console.error("❌ Submit error:", err);
+    alert("❌ Terjadi kesalahan saat menyimpan data: " + err.message);
   } finally {
     // 🔥 aktifkan kembali tombol
     submitBtn.disabled = false;

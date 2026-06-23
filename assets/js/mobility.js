@@ -1287,11 +1287,11 @@ async function handleMobilitySubmit(e) {
 
     document.getElementById("ttl").value = ttlGabung;
 
-    // 🔥 PERBAIKAN: Tambahkan SEMUA field termasuk file Google Drive
+    // 🔥 PAYLOAD - SELALU "create" (karena data lama akan dihapus dulu)
     const payload = {
-      action: rowId ? "update" : "create", // ✅ Perbaikan: gunakan "update" jika edit
+      action: "create",  // ✅ SELALU "create"
       sheet: "DATA MAHASISWA NON DEGREE",
-      row: rowId || "", // ✅ Kirim row ID jika edit
+      // ❌ JANGAN kirim row ID (biarkan backend tambah row baru)
 
       type_program: document.getElementById("type_program").value,
       jenis_program: document.getElementById("jenis_program").value,
@@ -1307,20 +1307,21 @@ async function handleMobilitySubmit(e) {
       no_passport: document.getElementById("no_passport").value,
       jenis_kelamin: document.getElementById("jenis_kelamin").value,
       
-      // 🔥 TAMBAHKAN FIELD INI:
+      // 🔥 Field file Google Drive
       reguler_kmi: document.getElementById("reguler_kmi").value || "",
       file_loa: document.getElementById("file_loa").value || "",
       scan_passport: document.getElementById("scan_passport").value || "",
       foto: document.getElementById("foto").value || "",
     };
 
-    // 🔥 DEBUG: Lihat payload yang dikirim
-    console.log("📦 PAYLOAD YANG DIKIRIM:", payload);
+    // 🔥 DEBUG
+    console.log("📦 PAYLOAD:", payload);
+    console.log("🔑 Row ID (untuk delete):", rowId);
 
-    // 🔥 kalau edit → hapus dulu (jika backend tidak support update)
+    // 🔥 kalau edit → hapus data lama DULU
     if (rowId) {
       console.log("🗑️ Menghapus data lama row:", rowId);
-      await fetch(MOBILITY_API, {
+      const deleteRes = await fetch(MOBILITY_API, {
         method: "POST",
         body: JSON.stringify({
           action: "delete",
@@ -1328,9 +1329,15 @@ async function handleMobilitySubmit(e) {
           row: rowId,
         }),
       });
+      const deleteResult = await deleteRes.json();
+      console.log("📥 HASIL DELETE:", deleteResult);
+      
+      if (!deleteResult.success) {
+        throw new Error("Gagal menghapus data lama: " + deleteResult.error);
+      }
     }
 
-    // 🔥 create/update baru
+    // 🔥 Simpan data baru
     console.log("💾 Menyimpan data baru...");
     const res = await fetch(MOBILITY_API, {
       method: "POST",
@@ -1338,14 +1345,16 @@ async function handleMobilitySubmit(e) {
     });
 
     const result = await res.json();
-    console.log("📥 HASIL DARI SERVER:", result);
+    console.log("📥 HASIL SAVE:", result);
 
     if (!result.success) {
       throw new Error(result.error || "Gagal menyimpan");
     }
 
+    // Reload data
     await loadMobilityFromAPI();
 
+    // Refresh calendar
     document.getElementById("mobilityCalendar").innerHTML = "";
     initMobilityCalendar();
 
@@ -1359,9 +1368,8 @@ async function handleMobilitySubmit(e) {
     );
   } catch (err) {
     console.error("❌ Submit error:", err);
-    alert("❌ Terjadi kesalahan saat menyimpan data: " + err.message);
+    alert("❌ Terjadi kesalahan: " + err.message);
   } finally {
-    // 🔥 aktifkan kembali tombol
     submitBtn.disabled = false;
     submitBtn.innerHTML = originalText;
   }

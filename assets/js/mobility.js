@@ -1260,7 +1260,6 @@ function showMobilityForm() {
   document.body.classList.add("overflow-hidden");
 }
 // Form handler
-// Form handler
 async function handleMobilitySubmit(e) {
   e.preventDefault();
 
@@ -1287,11 +1286,11 @@ async function handleMobilitySubmit(e) {
 
     document.getElementById("ttl").value = ttlGabung;
 
-    // 🔥 PAYLOAD - SELALU "create" (karena data lama akan dihapus dulu)
+    // 🔥 PAYLOAD - Gunakan "update" jika edit, "create" jika tambah
     const payload = {
-      action: "create",  // ✅ SELALU "create"
+      action: rowId ? "update" : "create",  // ✅ update jika edit
       sheet: "DATA MAHASISWA NON DEGREE",
-      // ❌ JANGAN kirim row ID (biarkan backend tambah row baru)
+      row: rowId || "",  // ✅ Kirim row ID jika edit
 
       type_program: document.getElementById("type_program").value,
       jenis_program: document.getElementById("jenis_program").value,
@@ -1316,36 +1315,18 @@ async function handleMobilitySubmit(e) {
 
     // 🔥 DEBUG
     console.log("📦 PAYLOAD:", payload);
-    console.log("🔑 Row ID (untuk delete):", rowId);
+    console.log("🔑 Row ID:", rowId);
+    console.log("🎯 Action:", payload.action);
 
-    // 🔥 kalau edit → hapus data lama DULU
-    if (rowId) {
-      console.log("🗑️ Menghapus data lama row:", rowId);
-      const deleteRes = await fetch(MOBILITY_API, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "delete",
-          sheet: "DATA MAHASISWA NON DEGREE",
-          row: rowId,
-        }),
-      });
-      const deleteResult = await deleteRes.json();
-      console.log("📥 HASIL DELETE:", deleteResult);
-      
-      if (!deleteResult.success) {
-        throw new Error("Gagal menghapus data lama: " + deleteResult.error);
-      }
-    }
-
-    // 🔥 Simpan data baru
-    console.log("💾 Menyimpan data baru...");
+    // 🔥 Kirim data (TANPA delete dulu!)
+    console.log("💾 Menyimpan data...");
     const res = await fetch(MOBILITY_API, {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
     const result = await res.json();
-    console.log("📥 HASIL SAVE:", result);
+    console.log("📥 HASIL DARI SERVER:", result);
 
     if (!result.success) {
       throw new Error(result.error || "Gagal menyimpan");

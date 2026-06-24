@@ -1267,7 +1267,6 @@ async function handleMobilitySubmit(e) {
   const submitBtn = form.querySelector("button[type='submit']");
   const rowId = document.getElementById("mobilityId").value;
 
-  // 🚫 cegah double click
   if (submitBtn.disabled) return;
 
   submitBtn.disabled = true;
@@ -1275,23 +1274,14 @@ async function handleMobilitySubmit(e) {
   submitBtn.innerHTML = "⏳ Menyimpan...";
 
   try {
-    // ==============================
     // GABUNG TTL
-    // ==============================
     const tempat = document.getElementById("tempat_lahir").value;
     const tanggal = document.getElementById("tanggal_lahir").value;
-
-    const ttlGabung =
-      tempat && tanggal ? `${tempat}, ${tanggal}` : tempat || "";
-
+    const ttlGabung = tempat && tanggal ? `${tempat}, ${tanggal}` : tempat || "";
     document.getElementById("ttl").value = ttlGabung;
 
-    // 🔥 PAYLOAD - Gunakan "update" jika edit, "create" jika tambah
-    const payload = {
-      action: rowId ? "update" : "create",  // ✅ update jika edit
-      sheet: "DATA MAHASISWA NON DEGREE",
-      row: rowId || "",  // ✅ Kirim row ID jika edit
-
+    // 🔥 AMBIL SEMUA NILAI FORM
+    const formData = {
       type_program: document.getElementById("type_program").value,
       jenis_program: document.getElementById("jenis_program").value,
       kampus_asal: document.getElementById("kampus_asal").value,
@@ -1305,50 +1295,66 @@ async function handleMobilitySubmit(e) {
       masa_study: document.getElementById("masa_study").value,
       no_passport: document.getElementById("no_passport").value,
       jenis_kelamin: document.getElementById("jenis_kelamin").value,
-      
-      // 🔥 Field file Google Drive
       reguler_kmi: document.getElementById("reguler_kmi").value || "",
       file_loa: document.getElementById("file_loa").value || "",
       scan_passport: document.getElementById("scan_passport").value || "",
       foto: document.getElementById("foto").value || "",
     };
 
-    // 🔥 DEBUG
+    // 🔥 PAYLOAD: Gabungkan key lowercase (untuk create) + key header asli (untuk update)
+    const payload = {
+      action: rowId ? "update" : "create",
+      sheet: "DATA MAHASISWA NON DEGREE",
+      row: rowId || "",
+
+      // ✅ Key lowercase (untuk backend createStudent)
+      ...formData,
+
+      // ✅ Key sesuai header Sheet (untuk backend updateStudent)
+      "Type Program": formData.type_program,
+      "Jenis Program": formData.jenis_program,
+      "Kampus Asal": formData.kampus_asal,
+      "Nama": formData.nama,
+      "Tempat dan Tanggal Lahir": formData.ttl,
+      "Negara": formData.negara,
+      "Fakultas / Prodi / Penyelenggara Program": formData.fakultas_prodi_program,
+      "Prodi/PJ": formData.prodi_pj,
+      "Tahun Masuk Mahasiswa": formData.tahun_masuk,
+      "Tahun Keluar Mahasiswa": formData.tahun_keluar,
+      "Masa Study": formData.masa_study,
+      "No. Passport": formData.no_passport,
+      "Jenis Kelamin": formData.jenis_kelamin,
+      "Reguler / KMI": formData.reguler_kmi,
+      "File LOA": formData.file_loa,
+      "Scan Passport": formData.scan_passport,
+      "Foto": formData.foto,
+    };
+
     console.log("📦 PAYLOAD:", payload);
-    console.log("🔑 Row ID:", rowId);
     console.log("🎯 Action:", payload.action);
 
-    // 🔥 Kirim data (TANPA delete dulu!)
-    console.log("💾 Menyimpan data...");
     const res = await fetch(MOBILITY_API, {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
     const result = await res.json();
-    console.log("📥 HASIL DARI SERVER:", result);
+    console.log("📥 HASIL:", result);
 
     if (!result.success) {
       throw new Error(result.error || "Gagal menyimpan");
     }
 
-    // Reload data
     await loadMobilityFromAPI();
-
-    // Refresh calendar
     document.getElementById("mobilityCalendar").innerHTML = "";
     initMobilityCalendar();
-
     renderMobilityTable(1);
     updateMobilityStats();
-
     closeMobilityModal();
 
-    alert(
-      rowId ? "✅ Data berhasil diupdate!" : "✅ Data berhasil ditambahkan!",
-    );
+    alert(rowId ? "✅ Data berhasil diupdate!" : "✅ Data berhasil ditambahkan!");
   } catch (err) {
-    console.error("❌ Submit error:", err);
+    console.error("❌ Error:", err);
     alert("❌ Terjadi kesalahan: " + err.message);
   } finally {
     submitBtn.disabled = false;

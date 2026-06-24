@@ -70,11 +70,11 @@ async function loadMobilityFromAPI() {
     passport: row["No. Passport"] || "",
     gender: row["Jenis Kelamin"] || "",
     
-    // 🔥 TAMBAHAN untuk detail modal
+    // 🔥 PERBAIKAN: Sesuaikan dengan header sheet yang SEBENARNYA
     foto: row["Foto"] || row["Link Foto"] || "",
-    file_loa: row["File LOA"] || row["Link LOA"] || "",
+    file_loa: row["File Loa"] || row["File LOA"] || row["Link LOA"] || "",
     scan_passport: row["Scan Passport"] || "",
-    regulerKmi: row["Reguler / KMI"] || row["Reguler_KMI"] || "",
+    regulerKmi: row["Reguler/Kmi"] || row["Reguler / KMI"] || row["Reguler_KMI"] || "",
   };
 });
 

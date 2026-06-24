@@ -1260,6 +1260,7 @@ function showMobilityForm() {
   document.body.classList.add("overflow-hidden");
 }
 // Form handler
+// Form handler
 async function handleMobilitySubmit(e) {
   e.preventDefault();
 
@@ -1280,6 +1281,20 @@ async function handleMobilitySubmit(e) {
     const ttlGabung = tempat && tanggal ? `${tempat}, ${tanggal}` : tempat || "";
     document.getElementById("ttl").value = ttlGabung;
 
+    // Hitung Masuk Tahun & Keluar Tahun
+    let masukTahun = "";
+    let keluarTahun = "";
+    const tMasuk = document.getElementById("tahun_masuk").value;
+    const tKeluar = document.getElementById("tahun_keluar").value;
+    if (tMasuk) {
+      const d = new Date(tMasuk);
+      if (!isNaN(d)) masukTahun = d.getFullYear();
+    }
+    if (tKeluar) {
+      const d = new Date(tKeluar);
+      if (!isNaN(d)) keluarTahun = d.getFullYear();
+    }
+
     // 🔥 AMBIL SEMUA NILAI FORM
     const formData = {
       type_program: document.getElementById("type_program").value,
@@ -1290,8 +1305,8 @@ async function handleMobilitySubmit(e) {
       negara: document.getElementById("negara").value,
       fakultas_prodi_program: document.getElementById("fakultas_prodi_program").value,
       prodi_pj: document.getElementById("prodi_pj").value,
-      tahun_masuk: document.getElementById("tahun_masuk").value,
-      tahun_keluar: document.getElementById("tahun_keluar").value,
+      tahun_masuk: tMasuk,
+      tahun_keluar: tKeluar,
       masa_study: document.getElementById("masa_study").value,
       no_passport: document.getElementById("no_passport").value,
       jenis_kelamin: document.getElementById("jenis_kelamin").value,
@@ -1301,7 +1316,7 @@ async function handleMobilitySubmit(e) {
       foto: document.getElementById("foto").value || "",
     };
 
-    // 🔥 PAYLOAD: Gabungkan key lowercase (untuk create) + key header asli (untuk update)
+    // 🔥 PAYLOAD: Key lowercase (untuk create) + Key PERSIS header sheet (untuk update)
     const payload = {
       action: rowId ? "update" : "create",
       sheet: "DATA MAHASISWA NON DEGREE",
@@ -1309,8 +1324,13 @@ async function handleMobilitySubmit(e) {
 
       // ✅ Key lowercase (untuk backend createStudent)
       ...formData,
+      masuk_tahun: masukTahun,
+      keluar_tahun: keluarTahun,
+      report_izin: "",
 
-      // ✅ Key sesuai header Sheet (untuk backend updateStudent)
+      // ✅ Key PERSIS sama dengan header sheet (untuk backend updateStudent)
+      // Perhatikan case dan spasi HARUS PERSIS!
+      "No": "",
       "Type Program": formData.type_program,
       "Jenis Program": formData.jenis_program,
       "Kampus Asal": formData.kampus_asal,
@@ -1323,15 +1343,20 @@ async function handleMobilitySubmit(e) {
       "Tahun Keluar Mahasiswa": formData.tahun_keluar,
       "Masa Study": formData.masa_study,
       "No. Passport": formData.no_passport,
-      "Jenis Kelamin": formData.jenis_kelamin,
-      "Reguler / KMI": formData.reguler_kmi,
-      "File LOA": formData.file_loa,
+      "Masuk Tahun": masukTahun,
+      "Keluar Tahun": keluarTahun,
+      "Report / Izin Belajar": "",
       "Scan Passport": formData.scan_passport,
       "Foto": formData.foto,
+      "File Loa": formData.file_loa,         // ✅ "File Loa" (bukan "File LOA")
+      "Reguler/Kmi": formData.reguler_kmi,   // ✅ "Reguler/Kmi" (tanpa spasi)
+      "Jenis Kelamin": formData.jenis_kelamin,
     };
 
-    console.log("📦 PAYLOAD:", payload);
+    console.log("📦 PAYLOAD LENGKAP:", payload);
     console.log("🎯 Action:", payload.action);
+    console.log("🔑 File Loa:", payload["File Loa"]);
+    console.log("🔑 Reguler/Kmi:", payload["Reguler/Kmi"]);
 
     const res = await fetch(MOBILITY_API, {
       method: "POST",
@@ -1339,7 +1364,7 @@ async function handleMobilitySubmit(e) {
     });
 
     const result = await res.json();
-    console.log("📥 HASIL:", result);
+    console.log("📥 HASIL DARI SERVER:", result);
 
     if (!result.success) {
       throw new Error(result.error || "Gagal menyimpan");
@@ -1361,7 +1386,6 @@ async function handleMobilitySubmit(e) {
     submitBtn.innerHTML = originalText;
   }
 }
-
 function formatMobilityStatus(code) {
   const map = {
     aktif: "Aktif",

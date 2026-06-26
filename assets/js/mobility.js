@@ -20,6 +20,11 @@ async function initMobility() {
     .getElementById("mobilityForm")
     ?.addEventListener("submit", handleMobilitySubmit);
 
+  // 🆕 Auto-fill kampus saat type program berubah
+  document
+    .getElementById("type_program")
+    ?.addEventListener("change", updateKampusByType);
+    
   initMobilityCalendar();
   renderMobilityTable(1);
   updateMobilityStats();
@@ -1071,12 +1076,22 @@ function openMobilityModal(isEdit = false, program = null) {
     title.textContent = isEdit ? "Edit Program Mobilitas" : "Form Program Mobilitas";
   }
 
+  // 🆕 Reset visual indicator
+  const kampusAsal = document.getElementById("kampus_asal");
+  const kampusTujuan = document.getElementById("kampus_tujuan");
+  if (kampusAsal) kampusAsal.classList.remove("bg-blue-50", "border-blue-300");
+  if (kampusTujuan) kampusTujuan.classList.remove("bg-blue-50", "border-blue-300");
+
   if (isEdit && program) {
     // Set value dengan validasi
     safeSetValue("mobilityId", program.row);
     safeSetValue("type_program", program.type || "");
     safeSetValue("jenis_program", program.jenis || "");
+    
+    // 🆕 Set kampus - gunakan data asli, JANGAN auto-fill
     safeSetValue("kampus_asal", program.kampus || "");
+    safeSetValue("kampus_tujuan", program.kampusTujuan || "");
+    
     safeSetValue("nama", program.nama || "");
 
     // Parse TTL
@@ -1099,14 +1114,16 @@ function openMobilityModal(isEdit = false, program = null) {
     safeSetValue("scan_passport", program.scan_passport || "");
     safeSetValue("foto", program.foto || "");
     safeSetValue("reguler_kmi", program.regulerKmi || "");
-    // 🆕 Field baru
-    safeSetValue("kampus_tujuan", program.kampusTujuan || "");
     safeSetValue("laporan_kegiatan", program.laporanKegiatan || "");
+    
   } else {
-    // Reset form
+    // Reset form untuk tambah baru
     const form = document.getElementById("mobilityForm");
     if (form) form.reset();
     safeSetValue("mobilityId", "");
+    
+    // 🆕 Trigger auto-fill untuk form baru
+    setTimeout(() => updateKampusByType(), 50);
   }
 
   modal.classList.remove("hidden");
@@ -1284,6 +1301,9 @@ function showMobilityForm() {
 
   const idField = document.getElementById("mobilityId");
   if (idField) idField.value = "";
+
+  // 🆕 Trigger auto-fill setelah form di-reset
+  setTimeout(() => updateKampusByType(), 50);
 
   // optional: disable scroll body
   document.body.classList.add("overflow-hidden");
@@ -1522,6 +1542,39 @@ function getTotalActiveMobility() {
 
   return outbound + inbound;
 }
+/* ===============================
+   AUTO-FILL KAMPUS BERDASARKAN TYPE PROGRAM
+================================= */
+function updateKampusByType() {
+  const typeProgram = document.getElementById("type_program").value;
+  const kampusAsal = document.getElementById("kampus_asal");
+  const kampusTujuan = document.getElementById("kampus_tujuan");
+  
+  if (!kampusAsal || !kampusTujuan) return;
+  
+  const UNIDA = "Universitas Darussalam Gontor";
+  
+  // Reset dulu kedua field
+  kampusAsal.value = "";
+  kampusTujuan.value = "";
+  
+  if (typeProgram === "outbound") {
+    // Outbound: Dari UNIDA → Luar
+    kampusAsal.value = UNIDA;
+    kampusAsal.classList.add("bg-blue-50", "border-blue-300");
+    kampusTujuan.classList.remove("bg-blue-50", "border-blue-300");
+  } else if (typeProgram === "inbound") {
+    // Inbound: Dari Luar → UNIDA
+    kampusTujuan.value = UNIDA;
+    kampusTujuan.classList.add("bg-blue-50", "border-blue-300");
+    kampusAsal.classList.remove("bg-blue-50", "border-blue-300");
+  } else if (typeProgram === "virtual") {
+    // Virtual: kedua field bisa diisi manual
+    kampusAsal.classList.remove("bg-blue-50", "border-blue-300");
+    kampusTujuan.classList.remove("bg-blue-50", "border-blue-300");
+  }
+}
+
 // === DOWNLOAD FILE === //
 function getMobilityExportData() {
   return filteredMobilityData || mobilityPrograms;

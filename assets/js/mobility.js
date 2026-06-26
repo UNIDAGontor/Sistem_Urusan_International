@@ -1085,7 +1085,11 @@ function openMobilityModal(isEdit = false, program = null) {
   if (isEdit && program) {
     // Set value dengan validasi
     safeSetValue("mobilityId", program.row);
-    safeSetValue("type_program", program.type || "");
+    
+    // 🆕 Set type_program - pastikan value valid
+    const typeValue = program.type || "";
+    safeSetValue("type_program", typeValue);
+    
     safeSetValue("jenis_program", program.jenis || "");
     
     // 🆕 Set kampus - gunakan data asli, JANGAN auto-fill
@@ -1122,7 +1126,7 @@ function openMobilityModal(isEdit = false, program = null) {
     if (form) form.reset();
     safeSetValue("mobilityId", "");
     
-    // 🆕 Trigger auto-fill untuk form baru
+    // 🆕 Trigger auto-fill untuk form baru (akan cek type_program)
     setTimeout(() => updateKampusByType(), 50);
   }
 
@@ -1554,24 +1558,31 @@ function updateKampusByType() {
   
   const UNIDA = "Universitas Darussalam Gontor";
   
-  // Reset dulu kedua field
-  kampusAsal.value = "";
-  kampusTujuan.value = "";
+  // Reset visual indicator
+  kampusAsal.classList.remove("bg-blue-50", "border-blue-300");
+  kampusTujuan.classList.remove("bg-blue-50", "border-blue-300");
+  
+  // 🆕 Jika belum pilih type, kosongkan kedua field
+  if (!typeProgram) {
+    kampusAsal.value = "";
+    kampusTujuan.value = "";
+    return;
+  }
   
   if (typeProgram === "outbound") {
     // Outbound: Dari UNIDA → Luar
     kampusAsal.value = UNIDA;
     kampusAsal.classList.add("bg-blue-50", "border-blue-300");
-    kampusTujuan.classList.remove("bg-blue-50", "border-blue-300");
+    kampusTujuan.value = "";
   } else if (typeProgram === "inbound") {
     // Inbound: Dari Luar → UNIDA
     kampusTujuan.value = UNIDA;
     kampusTujuan.classList.add("bg-blue-50", "border-blue-300");
-    kampusAsal.classList.remove("bg-blue-50", "border-blue-300");
+    kampusAsal.value = "";
   } else if (typeProgram === "virtual") {
     // Virtual: kedua field bisa diisi manual
-    kampusAsal.classList.remove("bg-blue-50", "border-blue-300");
-    kampusTujuan.classList.remove("bg-blue-50", "border-blue-300");
+    kampusAsal.value = "";
+    kampusTujuan.value = "";
   }
 }
 
